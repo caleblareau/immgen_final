@@ -24,12 +24,15 @@ peaks <- makeGRangesFromDataFrame(peaks, seqnames = "V1", start.field = "V2", en
 counts <- SummarizedExperiment(assays = list(counts = counts),
                                rowData = peaks, 
                                colData = DataFrame(names = colnames(counts)))
+counts <- addGCBias(counts,  genome = BSgenome.Mmusculus.UCSC.mm10)
+bg <- getBackgroundPeaks(counts)
 
+# Motifs
 data("mouse_pwms_v1") # also mouse_pwms_v1
 motif_ix <- matchMotifs(mouse_pwms_v1, counts, genome = BSgenome.Mmusculus.UCSC.mm10)
-counts <- addGCBias(counts,  genome = BSgenome.Mmusculus.UCSC.mm10)
-dev <- computeDeviations(object = counts, annotations = motif_ix)
 
+# Scores
+dev <- computeDeviations(object = counts, annotations = motif_ix)
 zscores <- assays(dev)[["z"]]
 sd <- assays(dev)[["deviations"]]
 

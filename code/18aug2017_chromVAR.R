@@ -26,15 +26,27 @@ counts <- SummarizedExperiment(assays = list(counts = counts),
                                colData = DataFrame(names = colnames(counts)))
 counts <- addGCBias(counts,  genome = BSgenome.Mmusculus.UCSC.mm10)
 bg <- getBackgroundPeaks(counts)
+#write.table(bg, file = "../chromVAR/18aug_backgroundPeaks.tsv", sep = "\t", quote = FALSE, row.names = FALSE, col.names = FALSE)
+remove(bg)
 
 # Motifs
 data("mouse_pwms_v1") # also mouse_pwms_v1
 motif_ix <- matchMotifs(mouse_pwms_v1, counts, genome = BSgenome.Mmusculus.UCSC.mm10)
 
+# motifdf <- data.frame(data.matrix(assays(motif_ix)[["motifMatches"]]))
+# write.table(motifdf, file = "../chromVAR/motifMatchData.csv",row.names = FALSE, col.names = FALSE, sep = ",", quote = FALSE)
+# write.table(data.frame(x = colnames(motifdf)), file = "../chromVAR/motifMatchCols.tsv",row.names = FALSE, col.names = FALSE, sep = ",",  quote = FALSE)
+
+
 # Scores
 dev <- computeDeviations(object = counts, annotations = motif_ix)
 zscores <- assays(dev)[["z"]]
 sd <- assays(dev)[["deviations"]]
+variability <- computeVariability(dev)
+
+write.table(variability, file = "../chromVAR/variabilityData.csv",row.names = FALSE, col.names = FALSE, sep = ",", quote = FALSE)
+write.table(data.frame(x = row.names(variability)), file = "../chromVAR/variabilityRows.tsv",row.names = FALSE, col.names = FALSE, sep = ",",  quote = FALSE)
+write.table(data.frame(x = colnames(variability)), file = "../chromVAR/variabilityCols.tsv",row.names = FALSE, col.names = FALSE, sep = ",",  quote = FALSE)
 
 write.table(zscores, file = "../chromVAR/zscoreData.csv",row.names = FALSE, col.names = FALSE, sep = ",", quote = FALSE)
 write.table(data.frame(x = row.names(zscores)), file = "../chromVAR/zscoreRows.tsv",row.names = FALSE, col.names = FALSE, sep = ",",  quote = FALSE)

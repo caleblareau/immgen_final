@@ -55,6 +55,8 @@ totalDFlist <- lapply(1:dim(TSSdfFinal)[1], function(i){
 })
 
 totalDF <- data.table::rbindlist(totalDFlist)
+write.table(totalDF, file = "../output/19aug_varianceComponentsWpearson.txt", quote = FALSE, sep = "\t", col.names = TRUE, row.names = FALSE)
+
 
 ggplot(totalDF, aes(x = pearson^2, y = Unexplained)) + 
   geom_point()+ pretty_plot()

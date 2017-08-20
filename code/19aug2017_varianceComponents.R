@@ -33,9 +33,12 @@ vdf2$rank <- 1:dim(vdf2)[1]
 
 
 ldf <- melt(vdf2, id.var=c("gene", "rank"))
-ggplot(ldf, aes(x = rank, y = value, fill = variable)) + 
-  geom_bar(stat = "identity") + pretty_plot()
-
+p1 <- ggplot(ldf, aes(x = rank, y = value, fill = variable)) + 
+  geom_bar(stat = "identity") + pretty_plot() +
+  labs(fill = "Component", x = "Genes", y = "% Variance Explained") + 
+  scale_fill_manual(values = c("red", "green3", "dodgerblue")) +
+  theme(panel.grid = element_blank(), panel.border = element_blank(), legend.position = "bottom") 
+ggsave(p1, file = "../figures/20aug_varianceComponents.pdf")
 
 # Import the peak annotation; filter things that are not in 
 # the RNA-seq data or duplicated TSSs

@@ -88,7 +88,7 @@ heatplot <- ggplot(reshape2::melt(cormat), aes(x=Var2, y=Var1, fill = value)) +
   coord_fixed(ratio=1) + scale_fill_gradientn(colors = jdb_palette("brewer_spectra")) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   theme(axis.title.x=element_blank(), axis.title.y=element_blank()) +
-  labs(fill='Correlation') + ggtitle("No filtering for variable peaks")
+  labs(fill='Correlation') + ggtitle("No filtering for variable genes")
 print(heatplot)
 
 

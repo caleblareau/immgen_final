@@ -8,51 +8,91 @@ keepersH <- c("HSC", "MPP", "CLP", "Mono", "Bcell", "NK", "CD8", "CD4")
 
 # Import human data
 rnaraw <- fread("zcat < ../humandata/GSE74246_RNAseq_All_Counts.txt.gz")
-genes <- as.character(data.frame(rnaraw[,1])[,1])
+hGenes <- as.character(data.frame(rnaraw[,1])[,1])
 rnadat <- rnaraw[,-1]
 types <- unique(unlist(strsplit(colnames(rnadat), split = "-"))[c(FALSE, TRUE)])[1:13]
 alltypes <- unlist(strsplit(colnames(rnadat), split = "-"))[c(FALSE, TRUE)]
 rnadat <- data.matrix(data.frame(rnaraw[,-1]))
 
-collapsedMat <- sapply(types, function(type){
+hCounts <- sapply(c("HSC", "MPP", "CLP", "Mono", "Bcell", "NKcell", "CD8Tcell", "CD4Tcell"), function(type){
   rowSums(rnadat[,which(type == alltypes)])
 })
+remove(rnadat)
+colnames(hCounts) <- paste0("h", keepersH)
 
 
-log2norm <- log2(sweep(rnadat, 2, (colSums(rnadat) / 1000000), "/") + 1)
+# Mouse defintions
+mHSC <- c("LTHSC.34-.BM", "LTHSC.34+.BM")
+mMPP <- c("MMP3.48+.BM", "MMP4.135+.BM")
+mCLP <- c("proB.CLP.BM")
+mMono <- c("Mo.6C-II-.Bl", "Mo.6C+II-.Bl")
+mBcell <- c("B.Fo.Sp")
+mNK <- c("NK.27-11b+.Sp", "NK.27+11b-.Sp", "NK.27+11b+.Sp")
+mCD8 <- c("T.8.Nve.Sp")
+mCD4 <- c("T.4.Nve.Sp")
 
+allTypes <- list(mHSC, mMPP, mCLP, mMono, mBcell, mNK, mCD8, mCD4)
 
 # Import ImmGen data
-Icounts <- data.matrix(fread("zcat < ../data/17aug_commonATAC_normalized.txt.gz"))
-Ipeaks <- fread("../data/ImmGenATAC1219.peak.bed")
-keepers <- fread("../data/immgen_good_peaks.txt", header = FALSE)[[1]]
-keepidx <- Ipeaks[[4]] %in% keepers
-Icounts <- Icounts[keepidx,]
-Ipeaks <- Ipeaks[keepidx,]
+Icounts <- data.matrix(fread("zcat < ../data/17aug_commonRNA_normalized.txt.gz"))
+mGenes <- read.table("../data/rnaRowLabels.txt")[,1]
 
-# Add liftover
-lo <- fread("../liftover/ImmGen_hg19peaks.bed")
-lo_g <- makeGRangesFromDataFrame(lo[lo[["V4"]] %in% keepers,], seqnames = "V1", start.field = "V2",
-                                 end.field = "V3", keep.extra.columns = TRUE)
-  
-# Intersect human and liftover
-ov <- findOverlaps(lo_g, human_g)
-overlapdf <- data.frame(immgenPeak = as.character(mcols(lo_g)[queryHits(ov),1]),
-                        humanPeak = as.character(mcols(human_g)[subjectHits(ov),1]), stringsAsFactors = FALSE)
+mCounts <- sapply(allTypes, function(typevec){
+  if(length(typevec) > 1){
+    rowSums(Icounts[,typevec])
+  } else {
+    Icounts[,typevec]
+  }
+})
+remove(Icounts)
+colnames(mCounts) <- paste0("m", keepersH)
 
-overlapdf <- overlapdf[!duplicated(overlapdf$immgenPeak),]
-overlapdf <- overlapdf[!duplicated(overlapdf$humanPeak),]
-#write.table(overlapdf, file = "../liftover/overlapPeaks.txt", row.names = FALSE, sep = "\t", quote = FALSE, col.names = FALSE)
+# Add liftover gene IDs
+lo_dt <- fread("../liftover/HOM_MouseHumanSequence.rpt")
+transdf <- data.frame(mouse = lo_dt[["Symbol"]][c(TRUE,FALSE)], human = lo_dt[["Symbol"]][c(FALSE,TRUE)], stringsAsFactors = FALSE)
+mouseToHuman <- transdf$human
+names(mouseToHuman) <- transdf$mouse
+humanToMouse <- transdf$mouse
+names(humanToMouse) <- transdf$human
 
-# No do the mapping
-imap <- 1:dim(Ipeaks)[1]
-names(imap) <- as.character(Ipeaks[[4]])
-hmap <- 1:length(human_g)
-names(hmap) <- as.character(humanPeaks$idx )
+# Make a consensus set of genes
+removeNA <- function(x) x[!is.na(x)]
+hmhGenes  <- mouseToHuman[removeNA(unname(humanToMouse[hGenes]))]
+hmGenes <- removeNA(unname(mouseToHuman[mGenes]))
 
-immgen_LO_counts <- Icounts[unname(imap[overlapdf$immgenPeak]),]
-human_LO_counts <- cellTypeDatMatHuman[unname(hmap[overlapdf$humanPeak]),]
+keepHuman <- sort(intersect(hmGenes, hmhGenes))
+keepMouse <- humanToMouse[keepHuman]
 
-cormat <- cor(log2(immgen_LO_counts+1), log2(human_LO_counts+1))
-heatmaply(cormat, colors = jdb_palette("brewer_spectra"))
+masterTranslateDF <- data.frame(
+  humanGene = keepHuman, 
+  mouseGene = keepMouse, 
+  humanIdx = match(keepHuman, hGenes),
+  mouseIdx = match(keepMouse, mGenes),
+  stringsAsFactors = FALSE
+)
+masterTranslateDF <- masterTranslateDF[complete.cases(masterTranslateDF), ]
+dim(masterTranslateDF)
+
+immgen_LO_counts <- mCounts[masterTranslateDF$mouseIdx,]
+human_LO_counts <- hCounts[masterTranslateDF$humanIdx,]
+
+mCPM <- sweep(immgen_LO_counts, 2, colSums(immgen_LO_counts), FUN="/") * 1000000
+hCPM <- sweep(human_LO_counts, 2, colSums(human_LO_counts), FUN="/") * 1000000
+
+cormat <- cor(log2(mCPM+1), log2(hCPM+1), use = "com")
+
+heatplot <- ggplot(reshape2::melt(cormat), aes(x=Var2, y=Var1, fill = value)) +
+  geom_tile() + theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        axis.text = element_text(colour = "black", family = "Helvetica", size = 10)) +
+  coord_fixed(ratio=1) + scale_fill_gradientn(colors = jdb_palette("brewer_spectra")) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme(axis.title.x=element_blank(), axis.title.y=element_blank()) +
+  labs(fill='Correlation') + ggtitle("No filtering for variable peaks")
+print(heatplot)
+
+
+ggsave(heatplot, file = "../figures/mouse-human-RNA-heatmap0.pdf")
+
+
 

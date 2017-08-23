@@ -26,3 +26,17 @@ odf <- data.frame(
 write.table(odf, file = "../liftover/populationLiftoverPercentage.tsv", sep = "\t", quote = FALSE, row.names = FALSE, 
             col.names = TRUE)
 
+
+library(data.table)
+
+ovPeaks <- fread("../liftover/overlapPeaks.txt", header = FALSE)
+keepPeaks <- fread("../data/immgen_good_peaks.txt", header = FALSE)[[1]]
+loPeaks <- as.numeric(gsub("ImmGenATAC1219.peak_", "", ovPeaks[[1]]))
+peakPvals <- data.matrix(fread("zcat < ../data/0726.ATAC.population.log10Pval.BH.csv.gz")[,V1:=NULL])
+
+peakAnno <- fread("../data/peakAnnoVector.txt")[[1]]
+
+
+loPeaksPvals <- peakPvals[loPeaks,]
+peakPvals <- peakPvals[as.numeric(gsub("ImmGenATAC1219.peak_", "", keepPeaks)),]
+all(ovPeaks[[1]] %in% keepPeaks)

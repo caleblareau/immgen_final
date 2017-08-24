@@ -35,7 +35,7 @@ keepPeaks <- as.numeric(gsub("ImmGenATAC1219.peak_", "", keepPeaks))
 loPeaks <- as.numeric(gsub("ImmGenATAC1219.peak_", "", ovPeaks[[1]]))
 peakPvals <- data.matrix(fread("zcat < ../data/0726.ATAC.population.log10Pval.BH.csv.gz")[,V1:=NULL])
 
-peakAnno <- fread("../data/peakAnnoVector.txt")[[1]]
+
 
 makeOutTable <- function(annotation){
   

@@ -21,6 +21,7 @@ vals <- sapply(1:dim(rna)[1], function(i){
   round(c(mod$sigma2, mod$tau),3)
 })
 
+
 # Make plot-ready data frame
 vdf <- data.frame(t(vals)/rowSums(t(vals))*100)
 names(vdf) <- c("Unexplained", "Promoter", "Distal")

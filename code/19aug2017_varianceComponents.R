@@ -53,17 +53,21 @@ totalDFlist <- lapply(1:dim(TSSdfFinal)[1], function(i){
   atacidx <- as.numeric(strsplit(TSSdfFinal[i,][["peak.ID.number"]], split = "_")[[1]][2])
   gene <-  TSSdfFinal[i,][["genename.of.closest.TSS"]]
   vcidx <- which(vdf2$gene == gene)
-  df <- vdf2[vcidx,]
+  df <- data.frame(vdf2[vcidx,], peakID = TSSdfFinal[i,][["peak.ID.number"]])
   df$pearson <- cor(log2(rna[which(geneNames==gene), ]), log2(atac[atacidx,]))
   df
 })
 
 totalDF <- data.table::rbindlist(totalDFlist)
-write.table(totalDF, file = "../output/19aug_varianceComponentsWpearson.txt", quote = FALSE, sep = "\t", col.names = TRUE, row.names = FALSE)
 
+vcPeak <- data.frame(data.table::fread("../output/peakVarianceComponents.tsv"))
+totalDF2 <- merge(totalDF, vcPeak[,c(2,5)], by = "peakID")
 
-ggplot(totalDF, aes(x = pearson^2, y = Unexplained)) + 
-  geom_point()+ pretty_plot()
+#write.table(totalDF, file = "../output/19aug_varianceComponentsWpearson.txt", quote = FALSE, sep = "\t", col.names = TRUE, row.names = FALSE)
+
+totalDF2$Bins <- cut(totalDF2$Promoter.x, breaks=seq(0,100,10))
+ggplot(totalDF2, aes(x = Bins, y = pearson^2)) + 
+  geom_boxplot()+ pretty_plot()
 
 
 

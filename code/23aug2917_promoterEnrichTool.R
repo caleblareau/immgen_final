@@ -75,6 +75,28 @@ LRout <- sapply(1:length(flo), function(j){
   sp3 <- (sign(summary(m3)$coefficient[2,1]) * -1 * log10(summary(m3)$coefficient[2,4]))
   c(sp1, sp2, sp3)
 })
+
+# Do Fisher test
+FTout <- sapply(1:length(flo), function(j){
+  mdf <- merge(flo[[j]], qdf, by.x = "genes", by.y = "gene")
+  
+  ft <- function(type){
+     a <- mdf[,type] > 99.9 & mdf[,2] > 0
+     b <-  mdf[,type] > 99.9 & mdf[,2] == 0
+     c <- mdf[,type] < 99.9 & mdf[,2] > 0
+     d <- mdf[,type] < 99.9 & mdf[,2] == 0
+     ff <- fisher.test(matrix(c(sum(a),sum(b),sum(c),sum(d)), nrow = 2))
+     unname(sign(log(ff$estimate))) * -1 * log10(ff$p.value)
+  }
+  
+  # Get signed p-value
+  sp1 <- ft(colnames(qdf)[c(1)])
+  sp2 <- ft(colnames(qdf)[c(2)])
+  sp3 <- ft(colnames(qdf)[c(3)])
+  c(sp1, sp2, sp3)
+})
+
+
 LRout <- data.frame(LRout)
 colnames(LRout) <- sapply(flo, function(ele){ colnames(ele)[2]})
 LRout$VarianceComponent <- colnames(qdf)[c(1,2,3)]
@@ -84,9 +106,9 @@ names(plotdf) <- c("VarianceComponent", "Motif", "Signed_Pvalue")
 p1 <- ggplot() + pretty_plot() + 
   geom_bar(data = plotdf, aes(x=Motif, y=Signed_Pvalue, fill=VarianceComponent),
            stat = "identity", colour="black", position = position_dodge(width=0.9)) +
-  scale_fill_manual(values=c('green4', 'firebrick', 'dodgerblue')) + 
+  scale_fill_manual(values=c("dodgerblue", "green3", "red")) + 
   theme( legend.position="bottom")+labs(colour = "Variance Component", fill = "Variance Component") +
   theme(axis.text.x = element_text(vjust = 0.25, angle = 90)) +labs(x = NULL, y = "Signed P-value")
-
-ggsave(p1, filename = "../figures/ImmGen_VC.png")
+print(p1)
+ggsave(p1, filename = "../figures/ImmGen_VC_promoter.pdf")
 

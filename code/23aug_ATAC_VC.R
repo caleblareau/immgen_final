@@ -41,13 +41,15 @@ write.table(vdf, file = "../output/peakVarianceComponents.tsv", sep = "\t", row.
 
 ### Distal ####
 
-vdf0 <- vdf[vdf$inFilteredDataset & vdf$featureName == "outside",c(1,2,3)]
+vdf0 <- vdf[vdf$featureName == "outside",c(1,2,3)]
 vdf0 <- vdf0[order(vdf0$Distal, decreasing = TRUE), ]
 vdf2 <- rbind(vdf0[vdf0$Distal > 1, ],
               (vdf0[vdf0$Distal < 1, ])[(order(vdf0[vdf0$Distal < 1,"Promoter" ], decreasing = TRUE)),]
         )
+
+vdf2 <- vdf2[sort(sample(1:dim(vdf2)[1],sum(vdf$featureName == "TSS"))),]
 vdf2$rank <- 1:dim(vdf2)[1]
-ldf <- melt(vdf2, id.var=c("rank"))
+ldf <- melt(vdf2[,c("Unexplained", "Promoter", "Distal", "rank")], id.var=c("rank"))
 p1 <- ggplot(ldf, aes(x = rank, y = value, fill = variable)) + 
   geom_bar(stat = "identity") + pretty_plot() +
   labs(fill = "Component", x = "Distal Peaks", y = "% Variance Explained") + 
@@ -56,18 +58,19 @@ p1 <- ggplot(ldf, aes(x = rank, y = value, fill = variable)) +
 
 ggsave(p1, file = "../figures/23aug_varianceComponents_DISTAL.pdf", width = 10, height = 5)
 
-vdf0 <- vdf[vdf$inFilteredDataset & vdf$featureName == "TSS",]
-vdf0 <- vdf0[order(vdf0$Distal, decreasing = TRUE), ]
+vdf0 <- vdf[vdf$featureName == "TSS",]
+vdf0 <- vdf0[order(vdf0$Promoter, decreasing = TRUE), ]
 vdf2 <- rbind(vdf0[vdf0$Promoter > 1, ],
               (vdf0[vdf0$Promoter < 1, ])[(order(vdf0[vdf0$Promoter < 1,"Distal" ], decreasing = TRUE)),]
         )
 
 vdf2$rank <- 1:dim(vdf2)[1]
-ldf <- melt(vdf2[,c(1,2,3)], id.var=c("rank"))
+ldf <- melt(vdf2[,c("Unexplained", "Promoter", "Distal", "rank")], id.var=c("rank"))
+ldf$variable <- factor(as.character(ldf$variable), levels = c("Unexplained", "Distal", "Promoter"))
 p1 <- ggplot(ldf, aes(x = rank, y = value, fill = variable)) + 
   geom_bar(stat = "identity") + pretty_plot() +
   labs(fill = "Component", x = "Distal Peaks", y = "% Variance Explained") + 
-  scale_fill_manual(values = c("red", "green3", "dodgerblue")) +
+  scale_fill_manual(values = c("red", "dodgerblue", "green3")) +
   theme(panel.grid = element_blank(), panel.border = element_blank(), legend.position = "bottom") 
 
 ggsave(p1, file = "../figures/23aug_varianceComponents_PROMOTER.pdf", width = 10, height = 5)

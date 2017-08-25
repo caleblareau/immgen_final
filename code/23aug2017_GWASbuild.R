@@ -21,7 +21,7 @@ files <- list.files("../gwasRaw", full.names = TRUE)
 names <- gsub("../gwasRaw/", "", files) %>% gsub(pattern = "_pruned_rsq_0.8.bed", replacement = "")
 
 hitMat250 <- sapply(files, makeHitMat)
-colnames(hitMat250) <- names
+colnames(hitMat250) <- (names)
 hitMat250 <- Matrix::Matrix(hitMat250[,colSums(hitMat250) >= 50], sparse = TRUE)
 saveRDS(hitMat250, "../gwas_filtered/hitMat250_filt50.rds")
 

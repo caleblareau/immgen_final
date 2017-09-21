@@ -41,19 +41,26 @@ heatplot <- ggplot(reshape2::melt(zscores), aes(x=Var2, y=Var1)) +
                  coord_fixed(ratio=1) + scale_fill_gradientn(colors = jdb_palette("brewer_spectra")) +
                 theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
                 theme(axis.title.x=element_blank(), axis.title.y=element_blank())
-ggsave(heatplot, filename = "../figures/22Aug_gwasEnrichment.pdf", width = 30, height = 45)
+ggsave(heatplot, filename = "../figures/20September_gwasEnrichment.pdf", width = 30, height = 45)
 
 odf <- data.frame(trait = rownames(assays(dev)[["z"]]),
                   blood_enriched = rownames(assays(dev)[["z"]]) %in% inblood,
                   assays(dev)[["z"]])
 
-write.table(odf, file = "../gwas_filtered/22aug_chromVAR.tsv", sep = "\t", row.names = FALSE, col.names = TRUE,
+write.table(odf, file = "../gwas_filtered/20September_chromVAR_gwas.tsv", sep = "\t", row.names = FALSE, col.names = TRUE,
             quote = FALSE)
 
-zscores <- read.table("../gwas_filtered/22aug_chromVAR_gwas.tsv", header = TRUE)
-rownames(zscores) <- zcores[,1]
+zscores <- read.table("../gwas_filtered/20September_chromVAR_gwas.tsv", header = TRUE)
+rownames(zscores) <- zscores[,1]
 zscores <- zscores[,c(-1,-2)]
 zscores[zscores > 3] <- 3
 zscores[zscores < -3] <- -3
 
 heatmaply::heatmaply(zscores, colors = jdb_palette("brewer_spectra"))
+
+what <- "dia"
+rownames(odf)[grep(what, rownames(odf))]
+sort(odf[rownames(odf)[grep(what, rownames(odf))][14],])
+
+hmm <- apply(odf, 1, function(r) names(sort(r, decreasing = TRUE)[3]))
+

@@ -7,6 +7,7 @@ library(motifmatchr)
 library(chromVARmotifs)
 library(GenomicRanges)
 library(BuenColors)
+library(magrittr)
 
 # Import human data
 hemecounts <- data.matrix(fread("zcat < ../humandata/GSE74912_ATACseq_All_Counts.txt.gz"))
@@ -45,16 +46,22 @@ counts <- filterPeaks(counts)
 counts <- addGCBias(counts,  genome = BSgenome.Hsapiens.UCSC.hg19)
 
 makeHitMat <- function(file){
-  gwas_g <- makeGRangesFromDataFrame(fread(file), seqnames = "V1", start.field = "V2", end.field = "V3")
-  as.numeric(1:length(counts@rowRanges) %in% queryHits(findOverlaps(counts@rowRanges, gwas_g)))
+  print(file)
+  dt <- data.frame(fread(paste0("zcat < ", file), header = FALSE))
+  dt <- dt[dt[["V5"]] < 10^-4,]
+  gwas_g <- makeGRangesFromDataFrame(dt, seqnames = "V1", start.field = "V2", end.field = "V2")
+  as.numeric(1:length(human_g) %in% queryHits(findOverlaps(human_g, gwas_g)))
 }
 
 files <- list.files("../gwasRaw", full.names = TRUE)
-names <- gsub("../gwasRaw/", "", files) %>% gsub(pattern = "_pruned_rsq_0.8.bed", replacement = "")
+names <- gsub("../gwasRaw/", "", files) %>% gsub(pattern = "_pruned_rsq_0.8_expanded_rsq_0.8.bed.gz", replacement = "")
 
 hitMat250 <- sapply(files, makeHitMat)
 colnames(hitMat250) <- (names)
-hitMat250 <- Matrix::Matrix(hitMat250[,colSums(hitMat250) >= 50], sparse = TRUE)
+hitMat250 <- Matrix::Matrix(hitMat250[,colSums(hitMat250) <= 400000 & colSums(hitMat250) >= 50], sparse = TRUE)
+peak_indices <- chromVAR:::convert_to_ix_list(hitMat250)
+
+summary(colSums(hitMat250))
 
 dev <- computeDeviations(object = counts, annotations = hitMat250)
 gwasz <- reshape2::melt(assays(dev)[["z"]])

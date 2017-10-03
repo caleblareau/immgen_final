@@ -52,4 +52,9 @@ dev <- computeDeviations(object = counts, annotations = gwas_ix)
 
 zscores <- assays(dev)[["z"]]
 zm <- reshape2::melt(zscores)
+zm$pvalue <- round(pnorm(zm$value, lower.tail = FALSE),3)
+zm <- zm[order(zm$pvalue, decreasing = FALSE),]
+write.table(head(zm[,c(1,2,4)], 50), quote = FALSE, row.names = FALSE, sep = "\t")
+
+
 heatmaply::heatmaply(zscores, colors = jdb_palette("brewer_spectra"))

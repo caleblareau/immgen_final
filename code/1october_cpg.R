@@ -8,15 +8,18 @@ library(chromVARmotifs)
 library(magrittr)
 library(SummarizedExperiment)
 
+
 cpg <- read.table("../data/mm10_cpgIslandExt.txt")
+expressedGenes <- read.table("../data/expressed_genes_SM.txt", header = FALSE, stringsAsFactors = FALSE)[,1]
 cpgg <- makeGRangesFromDataFrame(cpg, seqnames.field = "V2", start.field = "V3", end.field = "V4")
 gtf <- "../data/mm10.refGenes.2016.1018.csv"
 gdf <- fread(gtf)
+gdf <- gdf[gdf[["gene.name"]]%in% expressedGenes, ]
 
 motifPromoter <- function(gdf, far ){
   
   # Define promoter shape
-  near <- 0
+  near <- 00
   
   # Process positive strand
   posdf <- gdf[gdf$strand == "+", c("chrom", "TSS", "gene.name")]
@@ -42,7 +45,7 @@ motifPromoter <- function(gdf, far ){
 farr <- 1
 resdf <- motifPromoter(gdf, far = farr)
 
-qdf <- read.table("../output/19aug_varianceComponents.txt", header = TRUE)
+qdf <- read.table("../output/RNA_varianceComponents.txt", header = TRUE)
 qdf$UnexplainedGene <- qdf$Unexplained > 90
 qdf$PromoterGene <- qdf$Promoter > 90
 qdf$DistalGene <- qdf$Distal > 90
@@ -67,6 +70,6 @@ p1 <- ggplot() + pretty_plot() +
   theme(axis.text.x = element_text(vjust = 0.25, angle = 90)) +
   labs(x = "Gene Type", y = "% TSS Overlapping CpG Island")
 
-
-ggsave(p1,  file = paste0("../output/tfenrich/varianceComponent_promoterTFenrich.", as.character(farr), "bp.pdf"))
+p1
+ggsave(p1,  file = paste0("../output/cpgi_overlap.pdf"))
 

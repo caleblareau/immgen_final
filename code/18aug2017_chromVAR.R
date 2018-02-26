@@ -17,9 +17,15 @@ BiocParallel::register(BiocParallel::MulticoreParam(2, progressbar = FALSE))
 
 #+ cache = TRUE, message=FALSE, warning=FALSE, echo = FALSE
 counts <- data.matrix(fread("zcat < ../data/17aug_commonATAC_normalized.txt.gz"))
-peaks <- fread("../data/ImmGenATAC1219.peak.bed")
-peaks <- makeGRangesFromDataFrame(peaks, seqnames = "V1", start.field = "V2", end.field = "V3")
+peaks <- fread("zcat < ../data/ImmGenATAC1219.peak.bed.gz")
 
+keepers <- fread(paste0("zcat < ", "../data/immgen_good_peaks.txt.gz"), header = FALSE)[[1]]
+keepers <-  as.numeric(gsub("ImmGenATAC1219.peak_", "", keepers))
+
+counts <- counts[keepers,]
+peaks <- peaks[keepers,]
+
+peaks <- makeGRangesFromDataFrame(peaks, seqnames = "V1", start.field = "V2", end.field = "V3")
 
 counts <- SummarizedExperiment(assays = list(counts = counts),
                                rowData = peaks, 
@@ -30,8 +36,8 @@ bg <- getBackgroundPeaks(counts)
 remove(bg)
 
 # Motifs
-data("mouse_pwms_v1") # also mouse_pwms_v1
-motif_ix <- matchMotifs(mouse_pwms_v1, counts, genome = BSgenome.Mmusculus.UCSC.mm10)
+data("mouse_pwms_v2") # also mouse_pwms_v1
+motif_ix <- matchMotifs(mouse_pwms_v2, counts, genome = BSgenome.Mmusculus.UCSC.mm10)
 
 # motifdf <- data.frame(data.matrix(assays(motif_ix)[["motifMatches"]]))
 # write.table(motifdf, file = "../chromVAR/motifMatchData.csv",row.names = FALSE, col.names = FALSE, sep = ",", quote = FALSE)

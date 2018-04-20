@@ -25,7 +25,7 @@ atac <- atac[,colnames(rna)]
 Exg <- read.table("usefulData/expressed_genes_SM.txt", stringsAsFactors = FALSE)[,1]
 Exg <- Exg[Exg %in% rownames(rna)]
 rna <- rna[Exg,]
-rna <- log2(rna + 1)
+#rna <- log2(rna + 1)
 
 promoters <- atac[peakAnno == "TSS",]
 all_distal <- atac[peakAnno == "outside",]
